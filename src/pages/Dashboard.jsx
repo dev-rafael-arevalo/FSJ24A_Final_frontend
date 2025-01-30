@@ -22,26 +22,42 @@ const Dashboard = () => {
   });
   const ApiUri = import.meta.env.VITE_REACT_API_URL;
 
+  // Obtener usuario actual y lista de usuarios al cargar el componente
   useEffect(() => {
     const loggedInUser = getUser();
     setUser(loggedInUser);
     fetchUsers();
   }, []);
 
+  // Funcion para obtener la lista de usuarios desde la API detalladamente usando depuracion y ver mas errores
   const fetchUsers = async () => {
     try {
-      const response = await axios.get(`${ApiUri}/v1/users`);
+      console.log("Intentando obtener usuarios..."); // Depuración inicial
+      const token = localStorage.getItem("token");
+      console.log("Token obtenido:", token); // Verifica si el token está presente
+  
+      const response = await axios.get(`${ApiUri}/v1/users`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
+        },
+      });
+  
+      console.log("Respuesta de la API:", response.data); // Verifica el contenido de la respuesta
       if (response.data && response.data.length > 0) {
         setUsers(response.data);
+        console.log("Usuarios cargados correctamente:", response.data); // Confirma que los usuarios se han cargado
       } else {
         setUsers([]);
+        console.warn("No se encontraron usuarios."); // Advertencia si no hay usuarios
       }
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Error al obtener usuarios:", error.response || error); // Muestra el error completo
+      Swal.fire("Error", "No se pudo cargar la lista de usuarios", "error");
       setUsers([]);
     }
   };
 
+  // Cerrar sesión
   const handleLogout = () => {
     Swal.fire({
       title: "¿Estás seguro?",
@@ -58,17 +74,25 @@ const Dashboard = () => {
     });
   };
 
+  // Agregar un nuevo usuario
   const handleAddUser = async () => {
+    if (!newUserData.name || !newUserData.email || !newUserData.password) {
+      Swal.fire("Error", "Todos los campos son obligatorios", "error");
+      return;
+    }
+
     try {
       await axios.post(`${ApiUri}/v1/users`, newUserData);
       Swal.fire("Éxito", "Usuario agregado correctamente", "success");
       fetchUsers();
       setShowModal(false);
+      setNewUserData({ name: "", email: "", password: "" }); // Limpiar formulario
     } catch (error) {
       Swal.fire("Error", "No se pudo agregar el usuario", "error");
     }
   };
 
+  // Eliminar usuario
   const handleDeleteUser = async (id) => {
     const result = await Swal.fire({
       title: "¿Estás seguro?",
@@ -90,7 +114,13 @@ const Dashboard = () => {
     }
   };
 
+  // Editar usuario
   const handleEditUser = async () => {
+    if (!editUserData.name || !editUserData.email) {
+      Swal.fire("Error", "Los campos Nombre y Correo son obligatorios", "error");
+      return;
+    }
+
     try {
       await axios.put(`${ApiUri}/v1/users/${editUserData.id}`, editUserData);
       Swal.fire("Éxito", "Usuario actualizado correctamente", "success");
@@ -101,6 +131,7 @@ const Dashboard = () => {
     }
   };
 
+  // Abrir modal para editar usuario
   const handleOpenEditModal = (user) => {
     setEditUserData({
       id: user.id,
@@ -112,15 +143,16 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-6 bg-gray-900 text-gray-100 rounded-lg shadow-md">
+
       {/* Cabecera */}
       <div className="flex justify-between items-center mb-4">
         {user ? (
           <>
-            <h1 className="text-xl font-semibold">Bienvenido, {user.name}</h1>
+            <h1 className="text-2xl font-semibold text-blue-400">Bienvenido, {user.name}</h1>
             <button
               onClick={handleLogout}
-              className="bg-red-600 text-white p-2 rounded"
+              className="bg-red-600 text-white p-2 rounded hover:bg-red-700 transition"
             >
               Cerrar sesión
             </button>
@@ -133,16 +165,16 @@ const Dashboard = () => {
       {/* Botón para agregar un nuevo usuario */}
       <button
         onClick={() => setShowModal(true)}
-        className="bg-blue-600 text-white p-2 rounded mb-4"
+        className="bg-blue-600 text-white p-2 rounded mb-4 hover:bg-blue-700 transition"
       >
         Agregar nuevo usuario
       </button>
 
       {/* Modal para agregar usuario */}
       {showModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-96">
-            <h2 className="text-xl mb-4">Agregar Nuevo Usuario</h2>
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center">
+          <div className="bg-gray-800 p-6 rounded-lg w-96 shadow-lg border border-blue-500">
+            <h2 className="text-xl mb-4 text-blue-400">Agregar Nuevo Usuario</h2>
             <input
               type="text"
               placeholder="Nombre"
@@ -150,7 +182,7 @@ const Dashboard = () => {
               onChange={(e) =>
                 setNewUserData({ ...newUserData, name: e.target.value })
               }
-              className="w-full p-2 mb-2 border border-gray-300 rounded"
+              className="w-full p-2 mb-2 border border-gray-600 rounded bg-gray-700 text-white focus:outline-none focus:ring focus:ring-blue-500"
             />
             <input
               type="email"
@@ -159,7 +191,7 @@ const Dashboard = () => {
               onChange={(e) =>
                 setNewUserData({ ...newUserData, email: e.target.value })
               }
-              className="w-full p-2 mb-2 border border-gray-300 rounded"
+              className="w-full p-2 mb-2 border border-gray-600 rounded bg-gray-700 text-white focus:outline-none focus:ring focus:ring-blue-500"
             />
             <input
               type="password"
@@ -168,65 +200,17 @@ const Dashboard = () => {
               onChange={(e) =>
                 setNewUserData({ ...newUserData, password: e.target.value })
               }
-              className="w-full p-2 mb-4 border border-gray-300 rounded"
+              className="w-full p-2 mb-4 border border-gray-600 rounded bg-gray-700 text-white focus:outline-none focus:ring focus:ring-blue-500"
             />
             <button
               onClick={handleAddUser}
-              className="bg-green-600 text-white p-2 rounded mr-2"
+              className="bg-green-600 text-white p-2 rounded mr-2 hover:bg-green-700 transition"
             >
               Agregar
             </button>
             <button
               onClick={() => setShowModal(false)}
-              className="bg-gray-400 text-white p-2 rounded"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Modal para editar usuario */}
-      {showEditModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-96">
-            <h2 className="text-xl mb-4">Editar Usuario</h2>
-            <input
-              type="text"
-              placeholder="Nombre"
-              value={editUserData.name}
-              onChange={(e) =>
-                setEditUserData({ ...editUserData, name: e.target.value })
-              }
-              className="w-full p-2 mb-2 border border-gray-300 rounded"
-            />
-            <input
-              type="email"
-              placeholder="Correo"
-              value={editUserData.email}
-              onChange={(e) =>
-                setEditUserData({ ...editUserData, email: e.target.value })
-              }
-              className="w-full p-2 mb-2 border border-gray-300 rounded"
-            />
-            <input
-              type="password"
-              placeholder="Contraseña (dejar en blanco si no se quiere cambiar)"
-              value={editUserData.password}
-              onChange={(e) =>
-                setEditUserData({ ...editUserData, password: e.target.value })
-              }
-              className="w-full p-2 mb-4 border border-gray-300 rounded"
-            />
-            <button
-              onClick={handleEditUser}
-              className="bg-blue-600 text-white p-2 rounded mr-2"
-            >
-              Actualizar
-            </button>
-            <button
-              onClick={() => setShowEditModal(false)}
-              className="bg-gray-400 text-white p-2 rounded"
+              className="bg-gray-500 text-white p-2 rounded hover:bg-gray-600 transition"
             >
               Cancelar
             </button>
@@ -238,29 +222,29 @@ const Dashboard = () => {
       {users.length === 0 ? (
         <p>No hay usuarios disponibles</p>
       ) : (
-        <table className="w-full table-auto border-collapse">
+        <table className="min-w-full bg-gray-800 shadow-md rounded-lg overflow-hidden border border-blue-500">
           <thead>
-            <tr>
-              <th className="border px-4 py-2">Nombre</th>
-              <th className="border px-4 py-2">Correo</th>
-              <th className="border px-4 py-2">Acciones</th>
+            <tr className="bg-blue-600 text-white">
+              <th className="border px–4 py–3">Nombre</th>
+              <th className="border px–4 py–3">Correo</th>
+              <th className="border px–4 py–3">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {users.map((user) => (
-              <tr key={user.id}>
-                <td className="border px-4 py-2">{user.name}</td>
-                <td className="border px-4 py-2">{user.email}</td>
-                <td className="border px-4 py-2 flex space-x-2">
+              <tr key={user.id} className="hover:bg-gray–700">
+                <td className="border px–4 py–3">{user.name}</td>
+                <td className="border px–4 py–3">{user.email}</td>
+                <td className="border px–4 py–3 flex space-x–2">
                   <button
                     onClick={() => handleDeleteUser(user.id)}
-                    className="bg-red-600 text-white p-2 rounded"
+                    className="bg-red–600 text-white py–1 px–3 rounded hover:bg-red–700 transition"
                   >
                     Eliminar
                   </button>
                   <button
                     onClick={() => handleOpenEditModal(user)}
-                    className="bg-blue-600 text-white p-2 rounded"
+                    className="bg-blue–600 text-white py–1 px–3 rounded hover:bg-blue–700 transition"
                   >
                     Actualizar
                   </button>
