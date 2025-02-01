@@ -2,7 +2,7 @@ import { Route, Navigate, BrowserRouter as Router, Routes } from "react-router-d
 import LoginPage from "../pages/LoginPage";
 import Register from "../pages/Register";
 import Dashboard from "../pages/Dashboard";
-import PrivateRoute from "../components/PrivateRoute"; // Importa el componente PrivateRoute
+import PrivateRoute from "../components/PrivateRoute"; 
 
 const AppRoutes = () => {
   return (
@@ -11,16 +11,14 @@ const AppRoutes = () => {
         {/* Ruta pública para Login */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Ruta pública para Register */}
+        {/* para register */}
         <Route path="/register" element={<Register />} />
 
-        {/* Ruta privada para Dashboard */}
         <Route
           path="/dashboard"
-          element={<PrivateRoute element={<Dashboard />} />} // Usa el componente PrivateRoute para la ruta privada
+          element={<PrivateRoute element={<Dashboard />} />} 
         />
         
-        {/* Redirigir a login si no se encuentra la ruta */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </Router>

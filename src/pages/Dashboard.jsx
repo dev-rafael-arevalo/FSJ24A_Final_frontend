@@ -177,33 +177,38 @@ const Dashboard = () => {
     }
   };
 
+
   const handleEditUser = async () => {
     if (!editUserData.name || !editUserData.email) {
-      Swal.fire("Error", "Los campos Nombre y Correo son obligatorios", "error");
-      return;
+        Swal.fire("Error", "Los campos Nombre y Correo son obligatorios", "error");
+        return;
     }
+
+    // Crear objeto con solo los campos necesarios
+    const updateData = {
+        name: editUserData.name.trim(),
+        email: editUserData.email.trim().toLowerCase(),
+        ...(editUserData.password ? {
+            password: editUserData.password,
+            password_confirmation: editUserData.password, // Confirmación requerida por Laravel
+        } : {})
+    };
 
     try {
-      // Crear objeto con solo los campos necesarios
-      const updateData = {
-        name: editUserData.name,
-        email: editUserData.email,
-        ...(editUserData.password ? { password: editUserData.password } : {})
-      };
+        const response = await axios.put(
+            `${ApiUri}/v1/users/${editUserData.id}`,
+            updateData,
+            getAxiosConfig()
+        );
 
-      await axios.put(
-        `${ApiUri}/v1/users/${editUserData.id}`,
-        updateData,
-        getAxiosConfig()
-      );
-
-      await Swal.fire("Éxito", "Usuario actualizado correctamente", "success");
-      setShowEditModal(false);
-      await fetchUsers();
+        await Swal.fire("Éxito", "Usuario actualizado correctamente", "success");
+        setShowEditModal(false);
+        await fetchUsers();
     } catch (error) {
-      handleApiError(error, "Error al actualizar usuario");
+        handleApiError(error, "Error al actualizar usuario");
     }
-  };
+};
+
 
   // Función centralizada para manejar errores de API
   const handleApiError = (error, defaultMessage) => {
